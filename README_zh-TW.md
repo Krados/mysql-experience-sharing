@@ -62,5 +62,26 @@ INSERT INTO test_table (col1, col2) VALUES('G', 94);
 
 視覺化總是最簡單的, 我們來看一下這張表 B+ tree 長怎樣, 這邊只呈現簡單化 clustered index 的 B+ tree
 ![GitHub Logo](https://github.com/Krados/mysql-experience-sharing/blob/master/test_table_clustered_index.png)
+*圖1*
+
 
 其中 Node 的部分只存 primary key 值, 而 Leaf Node 的部分是存 row 的所有值
+
+
+## Index (索引)
+首先先講解一下為何需要索引, 當我們看一本書我們想要快速的找到某一個我們想看的主題, 我們可以從第 1 頁開始翻翻到直到我們找到為止, 或者我們可以翻到書本最前面的目錄找到主題對應的頁數.
+
+
+從上面的例子來看應該不難看出哪一種效率比較高, 索引的目標就是提高查找的效率.
+
+
+### MySQL 有哪些 Index?
+
+#### (聚集索引) clustered index
+* 一張表中的 PRIMARY KEY 就會被 MySQL 拿來當 clustered index
+* 一張表中如果沒有 PRIMARY KEY 則 MySQL 會拿第一個 NOT NULL UNIQUE index 當 clustered index
+* 如果以上兩者皆沒有辦法滿足則 MySQL 會產生一個 hidden index 來當 clustered index
+
+#### (二級索引) secondary index
+* 任何非 clustered index 的 index 就稱作 secondary index
+
