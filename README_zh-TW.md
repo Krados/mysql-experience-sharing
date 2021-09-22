@@ -87,3 +87,5 @@ INSERT INTO test_table (col1, col2) VALUES('G', 94);
 #### (二級索引) secondary index
 * 任何非 clustered index 的 index 就稱作 secondary index
 
+#### (覆蓋索引) covering index
+* covering index 算是一個特別的 index, 它不存在在表中, 是表示再下查詢時不需要做回表的動作, 剛好在 secondary index 取到所有需要的欄位
