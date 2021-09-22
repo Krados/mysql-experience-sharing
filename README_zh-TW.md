@@ -48,7 +48,7 @@ CREATE TABLE `test_table` (
   `col1` varchar(255) NOT NULL,
   `col2` tinyint(4) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_age` (`col2`)
+  KEY `idx_col2` (`col2`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO test_table (col1, col2) VALUES('A', 100);
