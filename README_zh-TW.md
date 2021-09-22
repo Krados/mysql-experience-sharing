@@ -207,3 +207,14 @@ possible_keys: idx_col2
 
 
 這邊上張圖來解講回不回表的差異
+
+
+![with_index_condition_pushdown](https://github.com/Krados/mysql-experience-sharing/blob/master/with_index_condition_pushdown.png)
+
+如果查詢只需要 id 或 col2 的話不需要回到 clustered index 取額外的值, 因為 secondary index 的 leaf node 有存了 index 值以及 PRIMARY KEY 值(非物理位置地址)
+
+
+![without_index_condition_pushdown](https://github.com/Krados/mysql-experience-sharing/blob/master/without_index_condition_pushdown.png)
+
+
+如果查詢不只需要 id 或 col2 則需要回到 clustered index 取值又稱回表, 例如: col1 的值
