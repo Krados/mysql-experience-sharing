@@ -75,6 +75,8 @@ INSERT INTO test_table (col1, col2) VALUES('G', 94);
 從上面的例子來看應該不難看出哪一種效率比較高, 索引的目標就是提高查找的效率.
 
 
+**這篇文章會直接跳過 FULLTEXT INDEX, SPATIAL INDEX 不做深入的解釋.**
+
 ### MySQL 有哪些 Index?
 
 #### (聚集索引) clustered index
