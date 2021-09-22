@@ -264,3 +264,208 @@ X|衝突|衝突|衝突|衝突
 IX|衝突|兼容|衝突|兼容
 S|衝突|衝突|兼容|兼容
 IS|衝突|兼容|兼容|兼容
+
+
+### Lock Case Study
+
+#### Case1: 全表鎖
+上面提到的例子就是一個典型的全表鎖
+```
+mysql> begin; update test_table set col1 = 'ABC' where col1 = 'C';
+Query OK, 0 rows affected (0.00 sec)
+
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+```
+我們來看看 MySQL 怎麼幫我們下鎖的. **請注意 performance_schema.data_locks 這張表是 MySQL 8 後才加入的**
+```
+mysql> SELECT * FROM performance_schema.data_locks\G
+*************************** 1. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:1167:140096061923888
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: NULL
+OBJECT_INSTANCE_BEGIN: 140096061923888
+            LOCK_TYPE: TABLE
+            LOCK_MODE: IX
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: NULL
+*************************** 2. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:1:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: supremum pseudo-record
+*************************** 3. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:5:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: 4
+*************************** 4. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:6:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: 5
+*************************** 5. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:7:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: 6
+*************************** 6. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:8:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: 7
+*************************** 7. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:10:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: 1
+*************************** 8. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:13:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: 2
+*************************** 9. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:15:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: 3
+9 rows in set (0.00 sec)
+```
+先來看一下意向鎖怎麼下的
+```
+*************************** 1. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:1167:140096061923888
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: NULL
+OBJECT_INSTANCE_BEGIN: 140096061923888
+            LOCK_TYPE: TABLE
+            LOCK_MODE: IX
+          LOCK_STATUS: GRANTED
+```
+因為我們要對 test_table 的列做更新 MySQL 幫我們在 test_table 上了一個 (IX) 的表級鎖
+
+
+再來看一下 row 3~9 的資料
+```
+*************************** 3. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:5:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: 4
+
+ignore others cuz its too much
+```
+會發現 MySQL 幫我們在每一筆紀錄上了一個 (X)lock 列級鎖, 可是你會發現 MySQL 基本上已經把所有紀錄都上了 (X)lock, 這種操作是非常恐怖的.
