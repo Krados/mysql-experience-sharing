@@ -275,12 +275,13 @@ IS|衝突|兼容|兼容|兼容
 
 
 例子: 假設 c1 為 INDEX, 執行 SELECT c1 FROM t WHERE c1 BETWEEN 10 and 20 FOR UPDATE, 當你想寫入 15 至 t.c1 則會被阻擋
-* next key lock: gap + record lock, 鎖定一個範圍同時也鎖定紀錄本身(innodb 再大部分的情況下會使用此種 lock type)
+* next key lock: gap + record lock, 鎖定一個範圍同時也鎖定紀錄本身(innodb 都是使用此種 lock type)
 
 
 例子: 假設一個索引有 10, 11, 13, 20 那麼可能的 next key lock 區間為:
-() <- 代表不包含
-[] <- 代表包含
+
+
+() <- 代表不包含, [] <- 代表包含
 
 
 (negative infinity, 10]
@@ -296,6 +297,9 @@ IS|衝突|兼容|兼容|兼容
 
 
 (20, positive infinity)
+
+
+如果查詢的索引是 PRIMARY KEY 或 UNIQUE KEY INDEX 則 next key lock 會降級成 record lock
 
 
 以上 3 種 lock type 再接下的 case study 會一一介紹.
