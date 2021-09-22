@@ -230,3 +230,37 @@ possible_keys: idx_col2
 system > const > eq_ref > ref > range ~ index_merge > index > ALL
 
 
+## MySQL Lock 如何運作
+
+在我深入理解 lock 運作前我認為以下的查詢不會有任何的 lock 會發生, 但災難其實已經發生只是我不知道XD
+```
+mysql> begin; update test_table set col1 = 'ABC' where col1 = 'C';
+Query OK, 0 rows affected (0.00 sec)
+
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+```
+再講解上面的災難前我先介紹下 InnoDB 底下有哪些 lock.
+
+
+### 共享及排他鎖
+* shared (S)lock 共享鎖允許交易對(列)做讀取的動作
+* exclusive (X)lock 排他鎖允許交易對(列)做更新及刪除的動作
+
+
+舉個例子: 
+* 交易 T1 持有列 r 的 (S)lock, 如果交易 T2 也想持有列 r 的 (S)lock, 交易 T2 會立刻擁有列 r 的 (S)lock
+* 交易 T1 持有列 r 的 (S)lock, 如果交易 T2 想持有列 r 的 (X)lock 則必須等待交易 T1 釋放 (S)lock
+
+
+### 意向共享及排他鎖
+* intention shared lock (IS) 意向共享鎖表示有交易想要對表 table 底下的列 r 下 (S)lock, 所以會在 table 上標記 (IS)
+* intention exclusive lock (IS) 意向排他鎖表示有交易想要對表 table 底下的列 r 下 (X)lock, 所以會在 table 上標記 (IX)
+
+### S(lock) & X(lock) & (IS) & (IX) 的兼容性
+ / | X | IX | S | IS
+------------ | -------------| -------------| -------------| -------------
+X|衝突|衝突|衝突|衝突
+IX|衝突|兼容|衝突|兼容
+S|衝突|衝突|兼容|兼容
+IS|衝突|兼容|兼容|兼容
