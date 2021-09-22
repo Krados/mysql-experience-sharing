@@ -61,3 +61,6 @@ INSERT INTO test_table (col1, col2) VALUES('G', 94);
 ```
 
 視覺化總是最簡單的, 我們來看一下這張表 B+ tree 長怎樣, 這邊只呈現簡單化 clustered index 的 B+ tree
+![GitHub Logo](https://github.com/Krados/mysql-experience-sharing/blob/master/test_table_clustered_index.png)
+
+其中 Node 的部分只存 primary key 值, 而 Leaf Node 的部分是存 row 的所有值
