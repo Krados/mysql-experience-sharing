@@ -507,4 +507,29 @@ OBJECT_INSTANCE_BEGIN: 140096061920976
 
 ignore others cuz its too much
 ```
-會發現 MySQL 幫我們在每一筆紀錄上了一個 (X)lock record lock, 但基本上已經把全部的 record 上了 (X)lock, 這樣就造成了意外的全表鎖
+因為我們查詢中沒有使用到任一個 index 所以 MySQL 幫我們在每一筆紀錄上了一個 (X)lock record lock, 但基本上已經把全部的 record 上了 (X)lock, 這樣就意外造成了全表鎖
+
+
+再來看一下 row 2 的資料
+```
+*************************** 2. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 140096057640008:50:4:1:140096061920976
+ENGINE_TRANSACTION_ID: 5415
+            THREAD_ID: 67
+             EVENT_ID: 89
+        OBJECT_SCHEMA: yolo
+          OBJECT_NAME: test_table
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140096061920976
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: supremum pseudo-record
+```
+MySQL 同時也幫我們上了 next key lock, [7, positive infinity)
+
+
+如果在這個當下有個交易 T2 想要執行 INSERT INTO test_table (col1, col2) VALUES('Z', 12) 則會被阻擋
