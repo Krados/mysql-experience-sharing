@@ -266,10 +266,45 @@ S|衝突|衝突|兼容|兼容
 IS|衝突|兼容|兼容|兼容
 
 
-### Lock Case Study
+## MySQL InnoDB Lock type
+* record lock: 單一列上的鎖
 
-#### Case1: 全表鎖
-上面提到的例子就是一個典型的全表鎖
+
+例子: 假設 id 為 PRIMARY KEY, 執行 SELECT * FROM t WHERE id = 1 FOR UPDATE, 就對 id = 1 的列上了 record (X)lock
+* gap lock: 間隙鎖, 鎖定一個範圍, 但不包含紀錄本身
+
+
+例子: 假設 c1 為 INDEX, 執行 SELECT c1 FROM t WHERE c1 BETWEEN 10 and 20 FOR UPDATE, 當你想寫入 15 至 t.c1 則會被阻擋
+* next key lock: gap + record lock, 鎖定一個範圍同時也鎖定紀錄本身(innodb 再大部分的情況下會使用此種 lock type)
+
+
+例子: 假設一個索引有 10, 11, 13, 20 那麼可能的 next key lock 區間為:
+() <- 代表不包含
+[] <- 代表包含
+
+
+(negative infinity, 10]
+
+
+(10, 11]
+
+
+(11, 13]
+
+
+(13, 20]
+
+
+(20, positive infinity)
+
+
+以上 3 種 lock type 再接下的 case study 會一一介紹.
+
+
+## Lock Case Study
+
+### Case1: 意外的全表鎖
+上面提到的例子就是一個對 innodb lock 的機制完全不瞭解而意外造成的全表鎖
 ```
 mysql> begin; update test_table set col1 = 'ABC' where col1 = 'C';
 Query OK, 0 rows affected (0.00 sec)
@@ -468,4 +503,4 @@ OBJECT_INSTANCE_BEGIN: 140096061920976
 
 ignore others cuz its too much
 ```
-會發現 MySQL 幫我們在每一筆紀錄上了一個 (X)lock 列級鎖, 可是你會發現 MySQL 基本上已經把所有紀錄都上了 (X)lock, 這種操作是非常恐怖的.
+會發現 MySQL 幫我們在每一筆紀錄上了一個 (X)lock record lock, 但基本上已經把全部的 record 上了 (X)lock, 這樣就造成了意外的全表鎖
