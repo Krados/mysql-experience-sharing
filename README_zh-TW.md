@@ -218,3 +218,10 @@ possible_keys: idx_col2
 
 
 如果查詢不只需要 id 或 col2 則需要回到 clustered index 取值又稱回表, 例如: col1 的值
+
+
+不同 type 擁有不同的效能, 左至右由快到慢
+
+system > const > eq_ref > ref > range ~ index_merge > index > ALL
+
+
