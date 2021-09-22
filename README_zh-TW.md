@@ -89,3 +89,121 @@ INSERT INTO test_table (col1, col2) VALUES('G', 94);
 
 #### (覆蓋索引) covering index
 * covering index 算是一個特別的 index, 它不存在在表中, 是表示再下查詢時不需要做回表的動作, 剛好在 secondary index 取到所有需要的欄位
+
+### 如何使用 MySQL Index
+剛開始接觸 MySQL 時我天真的以為只要表上有加上 index 甚麼查詢都會變快...
+
+
+**雖然 index 可以讓查詢速度變快, 前提是用法要是對的!!!**
+
+
+完全沒使用到 index 的例子:
+```
+mysql> EXPLAIN select * from test_table\G
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: test_table
+   partitions: NULL
+         type: ALL
+possible_keys: NULL
+          key: NULL
+      key_len: NULL
+          ref: NULL
+         rows: 7
+     filtered: 100.00
+        Extra: NULL
+1 row in set, 1 warning (0.00 sec)
+```
+這邊看到 key 欄位是 NULL 完全沒使用到 index, type 欄位是 ALL 代表是整張表的掃描效率極低.
+
+
+使用 PRIMARY KEY 的例子:
+```
+mysql> EXPLAIN select * from test_table where id = 1\G
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: test_table
+   partitions: NULL
+         type: const
+possible_keys: PRIMARY
+          key: PRIMARY
+      key_len: 4
+          ref: const
+         rows: 1
+     filtered: 100.00
+        Extra: NULL
+1 row in set, 1 warning (0.00 sec)
+```
+這邊看到 key 欄位是 PRIMARY, type 欄位是 const 代表是針對 PRIMARY KEY 或者 UNIQUE KEY INDEX 做過濾.
+
+
+使用 index 但會回表的例子:
+```
+mysql> EXPLAIN select * from test_table where col2 = 100\G
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: test_table
+   partitions: NULL
+         type: ref
+possible_keys: idx_col2
+          key: idx_col2
+      key_len: 1
+          ref: const
+         rows: 1
+     filtered: 100.00
+        Extra: NULL
+1 row in set, 1 warning (0.00 sec)
+```
+這邊看到 key 欄位是 idx_col2, type 欄位是 ref 通常是指一般使用最左前綴規則的索引查詢.
+
+
+這邊簡單說明一下最左前綴規則, 假設你有三個欄位 (col1, col2, col3) 組成的 index, 你的 where 條件只能遵從以下規範:
+* where col1 = ?
+* where col1 = ? and col2 = ?
+* where col1 = ? and col2 = ? and col3 = ?
+* where col1 (>=, >, <, <=) ?
+* where col1 = ? and col2 (>=, >, <, <=) ?
+* where col1 = ? and col2 = ? and col3 (>=, >, <, <=) ?
+
+
+使用 index 但不會回表的例子:
+```
+mysql> EXPLAIN select id from test_table where col2 = 100\G
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: test_table
+   partitions: NULL
+         type: ref
+possible_keys: idx_col2
+          key: idx_col2
+      key_len: 1
+          ref: const
+         rows: 1
+     filtered: 100.00
+        Extra: Using index
+1 row in set, 1 warning (0.00 sec)
+
+mysql> EXPLAIN select col2 from test_table where col2 = 100\G
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: test_table
+   partitions: NULL
+         type: ref
+possible_keys: idx_col2
+          key: idx_col2
+      key_len: 1
+          ref: const
+         rows: 1
+     filtered: 100.00
+        Extra: Using index
+1 row in set, 1 warning (0.00 sec)
+```
+這邊會發現回表的與否只差在 Extra 欄位一個是 NULL 一個是 Using index, 不回表其實就代表覆蓋索引 covering index, 你需要的欄位在 secondary index 皆有不需要回去 clustered index 做在一次的存取.
+
+
+這邊上張圖來解講回不回表的差異
